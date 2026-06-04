@@ -1,0 +1,133 @@
+# Conduit — based on https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
+# and https://github.com/github/gitignore/blob/main/Dotnet.gitignore
+
+## User-specific / secrets
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.DotSettings.user
+secrets.json
+appsettings.*.local.json
+*.local.json
+.env
+.env.*
+!.env.example
+
+## Build outputs (.NET)
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Aa][Rr][Mm]64[Ee][Cc]/
+bld/
+[Oo]ut/
+artifacts/
+.artifacts/
+project.lock.json
+project.fragment.lock.json
+*.binlog
+MSBuild_Logs/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.sln.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/*.code-snippets
+.history/
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+*.received.*
+BenchmarkDotNet.Artifacts/
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+## Publish / deploy
+publish/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj
+PublishScripts/
+
+## ASP.NET / tooling
+ScaffoldingReadMe.txt
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+orleans.codegen.cs
+healthchecksdb
+MigrationBackup/
+
+## SQL Server local DB files (not Docker Postgres data)
+*.mdf
+*.ldf
+*.ndf
+
+## ReSharper / NCrunch / etc.
+_ReSharper*/
+*.[Rr]e[Ss]harper
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+## OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Node (if you add a frontend later)
+node_modules/
+
+## Docker local overrides (compose in repo is tracked)
+docker-compose.override.yml
+
+# ------------------------------------------------------------------------------
+# Local database tooling (SQLTools, ad-hoc queries, session files)
+# ------------------------------------------------------------------------------
+*.session.sql
+**/*.session.sql
+
+# Optional: local scratch queries (keep shared migrations/SQL in repo if needed)
+queries/
+*.scratch.sql
+
+# SQLTools workspace state (may contain connection metadata)
+.sqltools/

@@ -9,6 +9,9 @@ public static class DependencyInjection
     {
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<LoginUserHandler>();
+        services.AddScoped<RefreshUserTokenHandler>();
+        services.AddScoped<RevokeRefreshTokenHandler>();
+        services.AddScoped<ListUserRefreshTokensHandler>();
         return services;
     }
 }

@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Conduit.Application.Settings;
 using Conduit.Application.Users;
@@ -41,10 +42,9 @@ public static class DependencyInjection
             .AddDefaultTokenProviders();
 
         services.AddScoped<IUserAccountStore, UserAccountStore>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
         services.AddScoped<ITokenIssuer, JwtTokenIssuer>();
-
-        var jwt = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
-            ?? throw new InvalidOperationException("JWT configuration section is missing.");
+        services.AddSingleton(TimeProvider.System);
 
         services
             .AddAuthentication(options =>
@@ -56,17 +56,7 @@ public static class DependencyInjection
             {
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = false;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero,
-                    ValidIssuer = jwt.Issuer,
-                    ValidAudience = jwt.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key))
-                };
+                options.MapInboundClaims = false;
 
                 // RealWorld sends Authorization: Token <jwt>, not Bearer.
                 options.Events = new JwtBearerEvents
@@ -81,6 +71,29 @@ public static class DependencyInjection
 
                         return Task.CompletedTask;
                     }
+                };
+            });
+
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<Microsoft.Extensions.Options.IOptions<JwtSettings>>((options, jwtOptions) =>
+            {
+                var jwt = jwtOptions.Value;
+                if (string.IsNullOrWhiteSpace(jwt.Key))
+                {
+                    throw new InvalidOperationException("JWT configuration section is missing.");
+                }
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+                    ValidIssuer = jwt.Issuer,
+                    ValidAudience = jwt.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+                    NameClaimType = JwtRegisteredClaimNames.Sub
                 };
             });
 

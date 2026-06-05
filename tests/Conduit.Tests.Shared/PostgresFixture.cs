@@ -38,7 +38,8 @@ public sealed class PostgresFixture : IAsyncLifetime
                 ["JWT:Key"] = "test-signing-key-must-be-at-least-32-characters-long",
                 ["JWT:Issuer"] = "ConduitTests",
                 ["JWT:Audience"] = "ConduitTests",
-                ["JWT:DurationInMinutes"] = "15"
+                ["JWT:DurationInMinutes"] = "15",
+                ["JWT:RefreshTokenDurationInDays"] = "10"
             })
             .Build();
 

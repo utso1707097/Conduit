@@ -8,6 +8,12 @@ namespace Conduit.Infrastructure.Users;
 
 public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) : IUserAccountStore
 {
+    public async Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(id);
+        return user is null ? null : ToAccount(user);
+    }
+
     public async Task<UserAccount?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByEmailAsync(email);

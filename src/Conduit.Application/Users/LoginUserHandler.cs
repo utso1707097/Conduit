@@ -2,7 +2,10 @@ using Conduit.Application.Common;
 
 namespace Conduit.Application.Users;
 
-public sealed class LoginUserHandler(IUserAccountStore users, ITokenIssuer tokens)
+public sealed class LoginUserHandler(
+    IUserAccountStore users,
+    ITokenIssuer tokens,
+    IRefreshTokenStore refreshTokens)
 {
     public async Task<Result<AuthenticatedUser>> HandleAsync(
         LoginUserCommand command,
@@ -30,7 +33,14 @@ public sealed class LoginUserHandler(IUserAccountStore users, ITokenIssuer token
         }
 
         var token = tokens.IssueToken(account);
-        return Result<AuthenticatedUser>.Ok(new AuthenticatedUser(account, token));
+        var refreshResult = await refreshTokens.IssueAsync(account.Id, cancellationToken);
+        if (!refreshResult.IsSuccess)
+        {
+            return Result<AuthenticatedUser>.Fail(refreshResult.Kind, refreshResult.Errors);
+        }
+
+        return Result<AuthenticatedUser>.Ok(
+            new AuthenticatedUser(account, token, refreshResult.Value!));
     }
 
     private static IReadOnlyDictionary<string, string[]> Validate(LoginUserCommand command)

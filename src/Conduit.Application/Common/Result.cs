@@ -10,6 +10,30 @@ public enum ErrorKind
     Forbidden
 }
 
+public sealed class Result
+{
+    public ErrorKind Kind { get; init; }
+
+    public IReadOnlyDictionary<string, string[]> Errors { get; init; } =
+        new Dictionary<string, string[]>();
+
+    public bool IsSuccess => Kind == ErrorKind.None;
+
+    public static Result Ok() =>
+        new() { Kind = ErrorKind.None };
+
+    public static Result Fail(
+        ErrorKind kind,
+        IReadOnlyDictionary<string, string[]> errors) =>
+        new() { Kind = kind, Errors = errors };
+
+    public static Result NotFound(string field, string message) =>
+        Fail(ErrorKind.NotFound, new Dictionary<string, string[]>
+        {
+            [field] = [message]
+        });
+}
+
 public sealed class Result<T>
 {
     public ErrorKind Kind { get; init; }

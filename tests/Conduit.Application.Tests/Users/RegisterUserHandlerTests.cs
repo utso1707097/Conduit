@@ -9,11 +9,12 @@ public sealed class RegisterUserHandlerTests
 {
     private readonly FakeUserAccountStore _store = new();
     private readonly FakeTokenIssuer _tokens = new();
+    private readonly FakeRefreshTokenStore _refreshTokens = new();
     private readonly RegisterUserHandler _handler;
 
     public RegisterUserHandlerTests()
     {
-        _handler = new RegisterUserHandler(_store, _tokens);
+        _handler = new RegisterUserHandler(_store, _tokens, _refreshTokens);
     }
 
     [Fact]
@@ -27,6 +28,7 @@ public sealed class RegisterUserHandlerTests
         Assert.Equal("jake", result.Value!.Account.UserName);
         Assert.Equal("jake@jake.jake", result.Value.Account.Email);
         Assert.StartsWith("test-token-for-", result.Value.Token);
+        Assert.False(string.IsNullOrWhiteSpace(result.Value.RefreshToken.Token));
     }
 
     [Fact]

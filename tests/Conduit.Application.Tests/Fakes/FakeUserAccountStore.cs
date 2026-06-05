@@ -11,6 +11,12 @@ internal sealed class FakeUserAccountStore : IUserAccountStore
 
     public Func<string, string, string, Result<UserAccount>>? CreateHandler { get; set; }
 
+    public Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var account = _byEmail.Values.FirstOrDefault(u => u.Id == id);
+        return Task.FromResult(account);
+    }
+
     public Task<UserAccount?> FindByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         Task.FromResult(_byEmail.GetValueOrDefault(email));
 

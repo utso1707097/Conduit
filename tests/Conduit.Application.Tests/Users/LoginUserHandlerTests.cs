@@ -9,11 +9,12 @@ public sealed class LoginUserHandlerTests
 {
     private readonly FakeUserAccountStore _store = new();
     private readonly FakeTokenIssuer _tokens = new();
+    private readonly FakeRefreshTokenStore _refreshTokens = new();
     private readonly LoginUserHandler _handler;
 
     public LoginUserHandlerTests()
     {
-        _handler = new LoginUserHandler(_store, _tokens);
+        _handler = new LoginUserHandler(_store, _tokens, _refreshTokens);
     }
 
     [Fact]
@@ -27,6 +28,7 @@ public sealed class LoginUserHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal("jake", result.Value!.Account.UserName);
         Assert.StartsWith("test-token-for-", result.Value.Token);
+        Assert.False(string.IsNullOrWhiteSpace(result.Value.RefreshToken.Token));
     }
 
     [Fact]

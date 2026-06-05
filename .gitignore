@@ -131,3 +131,13 @@ queries/
 
 # SQLTools workspace state (may contain connection metadata)
 .sqltools/
+
+# ------------------------------------------------------------------------------
+# Local project docs (RealWorld API specs, roadmap — not committed)
+# ------------------------------------------------------------------------------
+docs/
+
+# ------------------------------------------------------------------------------
+# Cursor project skills (local agent rules — not committed)
+# ------------------------------------------------------------------------------
+.cursor/skills/

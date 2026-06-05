@@ -5,4 +5,10 @@
     <Project Path="src/Conduit.Domain/Conduit.Domain.csproj" />
     <Project Path="src/Conduit.Infrastructure/Conduit.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Conduit.Api.Tests/Conduit.Api.Tests.csproj" />
+    <Project Path="tests/Conduit.Application.Tests/Conduit.Application.Tests.csproj" />
+    <Project Path="tests/Conduit.Infrastructure.Tests/Conduit.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Conduit.Tests.Shared/Conduit.Tests.Shared.csproj" />
+  </Folder>
 </Solution>

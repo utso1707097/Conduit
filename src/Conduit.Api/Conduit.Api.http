@@ -1,3 +1,153 @@
-@Conduit.Api_HostAddress = http://localhost:5248
+@host = http://localhost:5248
+@token =
+
+### Register — success (201)
+# @name registerSuccess
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "jake",
+    "email": "jake@jake.jake",
+    "password": "jakejake"
+  }
+}
 
 ###
+@token = {{registerSuccess.response.body.$.user.token}}
+
+### Register — validation error: blank fields (422)
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "",
+    "email": "",
+    "password": ""
+  }
+}
+
+###
+
+### Register — conflict: duplicate email (409)
+# Run after registerSuccess or change email to an existing one.
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "jake2",
+    "email": "jake@jake.jake",
+    "password": "jakejake"
+  }
+}
+
+###
+
+### Register — conflict: duplicate username (409)
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "jake",
+    "email": "another@jake.jake",
+    "password": "jakejake"
+  }
+}
+
+###
+
+### Register — validation error: password too short (422)
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "shortpw",
+    "email": "shortpw@jake.jake",
+    "password": "12345"
+  }
+}
+
+###
+
+### Login — success (200)
+# @name loginSuccess
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "jake@jake.jake",
+    "password": "jakejake"
+  }
+}
+
+###
+@token = {{loginSuccess.response.body.$.user.token}}
+
+### Login — unauthorized: wrong password (401)
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "jake@jake.jake",
+    "password": "wrong-password"
+  }
+}
+
+###
+
+### Login — unauthorized: unknown email (401)
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "nobody@jake.jake",
+    "password": "jakejake"
+  }
+}
+
+###
+
+### Login — validation error: blank fields (422)
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "",
+    "password": ""
+  }
+}
+
+###
+
+### Login — round-trip after fresh register
+# @name registerForLogin
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "roundtrip",
+    "email": "roundtrip@jake.jake",
+    "password": "jakejake"
+  }
+}
+
+###
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "roundtrip@jake.jake",
+    "password": "jakejake"
+  }
+}

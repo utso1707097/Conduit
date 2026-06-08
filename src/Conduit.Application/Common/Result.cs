@@ -32,6 +32,18 @@ public sealed class Result
         {
             [field] = [message]
         });
+
+    public static Result Validation(string field, string message) =>
+        Fail(ErrorKind.Validation, new Dictionary<string, string[]>
+        {
+            [field] = [message]
+        });
+
+    public static Result Unauthorized(string field, string message) =>
+        Fail(ErrorKind.Unauthorized, new Dictionary<string, string[]>
+        {
+            [field] = [message]
+        });
 }
 
 public sealed class Result<T>
@@ -67,6 +79,12 @@ public sealed class Result<T>
 
     public static Result<T> NotFound(string field, string message) =>
         Fail(ErrorKind.NotFound, new Dictionary<string, string[]>
+        {
+            [field] = [message]
+        });
+
+    public static Result<T> Unauthorized(string field, string message) =>
+        Fail(ErrorKind.Unauthorized, new Dictionary<string, string[]>
         {
             [field] = [message]
         });

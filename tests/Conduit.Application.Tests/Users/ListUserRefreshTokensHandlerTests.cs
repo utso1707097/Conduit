@@ -63,6 +63,6 @@ public sealed class ListUserRefreshTokensHandlerTests
         var result = await _handler.HandleAsync(new ListRefreshTokensCommand("user-1", "user-1"));
 
         Assert.True(result.IsSuccess);
-        Assert.Contains(result.Value!, t => t.Token == issued.Token && !t.IsActive);
+        Assert.Contains(result.Value!, t => !t.IsActive);
     }
 }

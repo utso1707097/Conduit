@@ -76,18 +76,18 @@ public sealed class RevokeRefreshTokenHandler(IRefreshTokenStore refreshTokens)
 
 public sealed class ListUserRefreshTokensHandler(IRefreshTokenStore refreshTokens)
 {
-    public async Task<Result<IReadOnlyList<RefreshTokenInfo>>> HandleAsync(
+    public async Task<Result<IReadOnlyList<RefreshTokenSummary>>> HandleAsync(
         ListRefreshTokensCommand command,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(command.UserId))
         {
-            return Result<IReadOnlyList<RefreshTokenInfo>>.Validation("userId", "can't be blank");
+            return Result<IReadOnlyList<RefreshTokenSummary>>.Validation("userId", "can't be blank");
         }
 
         if (!string.Equals(command.UserId, command.RequesterUserId, StringComparison.Ordinal))
         {
-            return Result<IReadOnlyList<RefreshTokenInfo>>.Fail(
+            return Result<IReadOnlyList<RefreshTokenSummary>>.Fail(
                 ErrorKind.Forbidden,
                 new Dictionary<string, string[]>
                 {
@@ -96,6 +96,6 @@ public sealed class ListUserRefreshTokensHandler(IRefreshTokenStore refreshToken
         }
 
         var tokens = await refreshTokens.ListForUserAsync(command.UserId, cancellationToken);
-        return Result<IReadOnlyList<RefreshTokenInfo>>.Ok(tokens);
+        return Result<IReadOnlyList<RefreshTokenSummary>>.Ok(tokens);
     }
 }

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Conduit.Api.Infrastructure;
 using Conduit.Api.Routing;
 using Conduit.Application.Users;
@@ -17,7 +16,7 @@ public sealed class UserController(
     [HttpGet]
     public async Task<IActionResult> GetCurrent(CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         var result = await getCurrentUser.HandleAsync(
             new GetCurrentUserQuery(userId),
             cancellationToken);
@@ -35,7 +34,7 @@ public sealed class UserController(
         [FromBody] UserWrapperRequest<UpdateCurrentUserCommand>? request,
         CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         var result = await updateCurrentUser.HandleAsync(
             new UpdateCurrentUserRequest(userId, request?.User ?? new UpdateCurrentUserCommand()),
             cancellationToken);
@@ -44,11 +43,6 @@ public sealed class UserController(
             result,
             user => new UserWrapperResponse { User = UserResponse.From(user) });
     }
-
-    private string GetUserId() =>
-        User.FindFirstValue("sub")
-        ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? string.Empty;
 
     private string GetBearerToken()
     {

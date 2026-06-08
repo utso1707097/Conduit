@@ -19,11 +19,13 @@ public class ConduitDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("RefreshTokens");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Token).HasMaxLength(512).IsRequired();
+            entity.Property(e => e.TokenHash).HasMaxLength(64).IsRequired();
             entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.FamilyId).IsRequired();
 
-            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.TokenHash).IsUnique();
             entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.FamilyId);
 
             entity.HasOne(e => e.User)
                 .WithMany()

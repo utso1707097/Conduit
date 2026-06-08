@@ -1,14 +1,15 @@
-using System.Security.Claims;
 using Conduit.Api.Infrastructure;
 using Conduit.Api.Routing;
 using Conduit.Application.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Conduit.Api.Users;
 
 [ApiController]
 [Route(ApiRoutes.Users)]
+[EnableRateLimiting(RateLimiterPolicies.Auth)]
 public sealed class UsersController(
     RegisterUserHandler registerUser,
     LoginUserHandler loginUser,
@@ -79,9 +80,7 @@ public sealed class UsersController(
     [HttpGet("{id}/refresh-tokens")]
     public async Task<IActionResult> ListRefreshTokens(string id, CancellationToken cancellationToken)
     {
-        var requesterId = User.FindFirstValue("sub")
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? string.Empty;
+        var requesterId = User.GetUserId();
 
         var result = await listRefreshTokens.HandleAsync(
             new ListRefreshTokensCommand(id, requesterId),

@@ -9,6 +9,9 @@ public sealed record UserAccount(
     string? Bio,
     string? Image);
 
+// Token carries the plaintext refresh-token value. It is only populated when a
+// token is freshly issued or rotated (the single moment the secret is known);
+// the value is never persisted in clear text. Use RefreshTokenSummary for listings.
 public sealed record RefreshTokenInfo(
     string UserId,
     string Token,
@@ -18,6 +21,13 @@ public sealed record RefreshTokenInfo(
 {
     public bool IsActive => RevokedUtc is null && DateTime.UtcNow < ExpiresUtc;
 }
+
+// Leak-safe projection for listing endpoints: deliberately omits the secret value.
+public sealed record RefreshTokenSummary(
+    DateTime CreatedUtc,
+    DateTime ExpiresUtc,
+    DateTime? RevokedUtc,
+    bool IsActive);
 
 public sealed record AuthenticatedUser(
     UserAccount Account,
@@ -73,7 +83,7 @@ public interface IRefreshTokenStore
 
     Task<Result<RefreshTokenInfo>> RotateAsync(string token, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<RefreshTokenInfo>> ListForUserAsync(
+    Task<IReadOnlyList<RefreshTokenSummary>> ListForUserAsync(
         string userId,
         CancellationToken cancellationToken = default);
 }

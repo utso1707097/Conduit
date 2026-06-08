@@ -28,7 +28,7 @@ public sealed class RefreshTokenStoreIssueTests(PostgresFixture fixture)
     }
 
     [Fact]
-    public async Task IssueAsync_ExistingActiveToken_ReusesSameToken()
+    public async Task IssueAsync_CalledTwice_IssuesDistinctPerSessionTokens()
     {
         await using var scope = fixture.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserAccountStore>();
@@ -44,7 +44,7 @@ public sealed class RefreshTokenStoreIssueTests(PostgresFixture fixture)
 
         Assert.True(first.IsSuccess);
         Assert.True(second.IsSuccess);
-        Assert.Equal(first.Value!.Token, second.Value!.Token);
+        Assert.NotEqual(first.Value!.Token, second.Value!.Token);
     }
 
     [Fact]

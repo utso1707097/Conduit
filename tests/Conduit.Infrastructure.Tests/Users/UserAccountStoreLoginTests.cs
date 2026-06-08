@@ -65,6 +65,26 @@ public sealed class UserAccountStoreLoginTests(PostgresFixture fixture)
     }
 
     [Fact]
+    public async Task ValidateCredentialsAsync_ExceedsFailedAttempts_LocksAccount()
+    {
+        await using var scope = fixture.CreateScope();
+        var store = scope.ServiceProvider.GetRequiredService<IUserAccountStore>();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"lockout_{suffix}@example.com";
+        await store.CreateAsync($"lockout_{suffix}", email, "jakejake");
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            await store.ValidateCredentialsAsync(email, "wrong-password");
+        }
+
+        // Even the correct password is rejected once the account is locked out.
+        var afterLockout = await store.ValidateCredentialsAsync(email, "jakejake");
+
+        Assert.Null(afterLockout);
+    }
+
+    [Fact]
     public async Task ValidateCredentialsAsync_AfterRegister_WorksWithSamePassword()
     {
         await using var scope = fixture.CreateScope();

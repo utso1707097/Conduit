@@ -101,7 +101,9 @@ public sealed class ListRefreshTokensEndpointTests : IAsyncLifetime
         var tokens = await response.Content.ReadFromJsonAsync<List<RefreshTokenResponse>>();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains(tokens!, t => t.Token == originalRefresh && !t.IsActive);
+        // The rotated-away token is revoked, its replacement is active. Token values are
+        // intentionally never returned by the listing endpoint.
+        Assert.Contains(tokens!, t => !t.IsActive);
         Assert.Contains(tokens!, t => t.IsActive);
     }
 

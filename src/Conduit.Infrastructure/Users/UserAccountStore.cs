@@ -2,11 +2,14 @@ using Conduit.Application.Common;
 using Conduit.Application.Users;
 using Conduit.Infrastructure.Constants;
 using Conduit.Infrastructure.Models;
+using Conduit.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 
 namespace Conduit.Infrastructure.Users;
 
-public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) : IUserAccountStore
+public sealed class UserAccountStore(
+    UserManager<ApplicationUser> userManager,
+    ConduitDbContext db) : IUserAccountStore
 {
     public async Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
     {
@@ -79,11 +82,26 @@ public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) :
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
+            // Run a throwaway hash so a missing account costs roughly the same time as
+            // a wrong password, denying attackers a user-enumeration timing oracle.
+            userManager.PasswordHasher.HashPassword(new ApplicationUser(), password);
             return null;
         }
 
-        var valid = await userManager.CheckPasswordAsync(user, password);
-        return valid ? ToAccount(user) : null;
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            return null;
+        }
+
+        if (await userManager.CheckPasswordAsync(user, password))
+        {
+            await userManager.ResetAccessFailedCountAsync(user);
+            return ToAccount(user);
+        }
+
+        // Increments the failure counter and locks the account once the threshold is hit.
+        await userManager.AccessFailedAsync(user);
+        return null;
     }
 
     public async Task<Result<UserAccount>> UpdateAsync(
@@ -96,6 +114,11 @@ public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) :
         {
             return Result<UserAccount>.NotFound("user", "was not found");
         }
+
+        // All field updates run inside one transaction. UserManager calls SaveChanges
+        // internally per operation, so without this a failure partway through (e.g. the
+        // password remove succeeding but add failing) would leave the account corrupt.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         if (changes.Email is not null)
         {
@@ -171,6 +194,7 @@ public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) :
             }
         }
 
+        await transaction.CommitAsync(cancellationToken);
         return Result<UserAccount>.Ok(ToAccount(user));
     }
 

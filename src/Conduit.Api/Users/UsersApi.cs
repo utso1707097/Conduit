@@ -62,9 +62,6 @@ public sealed class UserWrapperResponse
 public sealed class RefreshTokenResponse
 {
     [Required]
-    public required string Token { get; init; }
-
-    [Required]
     public required DateTime ExpiresUtc { get; init; }
 
     [Required]
@@ -75,10 +72,11 @@ public sealed class RefreshTokenResponse
     [Required]
     public required bool IsActive { get; init; }
 
-    public static RefreshTokenResponse From(RefreshTokenInfo token) =>
+    // Intentionally omits the token value: refresh tokens are write-once secrets and
+    // must never be echoed back through a listing endpoint.
+    public static RefreshTokenResponse From(RefreshTokenSummary token) =>
         new()
         {
-            Token = token.Token,
             ExpiresUtc = token.ExpiresUtc,
             CreatedUtc = token.CreatedUtc,
             RevokedUtc = token.RevokedUtc,

@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Conduit.Application.Settings;
 using Conduit.Application.Users;
@@ -11,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Conduit.Infrastructure;
@@ -37,6 +37,11 @@ public static class DependencyInjection
                 options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 6;
+
+                // Brute-force protection: lock the account after repeated failures.
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddEntityFrameworkStores<ConduitDbContext>()
             .AddDefaultTokenProviders();
@@ -54,7 +59,10 @@ public static class DependencyInjection
             })
             .AddJwtBearer(options =>
             {
-                options.RequireHttpsMetadata = false;
+                // Default to requiring HTTPS for any metadata retrieval; only relax it
+                // where explicitly configured (local dev / test) via JWT:RequireHttpsMetadata.
+                options.RequireHttpsMetadata =
+                    configuration.GetValue("JWT:RequireHttpsMetadata", true);
                 options.SaveToken = false;
                 options.MapInboundClaims = false;
 
@@ -80,7 +88,16 @@ public static class DependencyInjection
                 var jwt = jwtOptions.Value;
                 if (string.IsNullOrWhiteSpace(jwt.Key))
                 {
-                    throw new InvalidOperationException("JWT configuration section is missing.");
+                    throw new InvalidOperationException(
+                        "JWT signing key is not configured. Set 'JWT:Key' via user-secrets " +
+                        "or environment variables.");
+                }
+
+                // HMAC-SHA256 requires at least a 256-bit (32-byte) key to be secure.
+                if (Encoding.UTF8.GetByteCount(jwt.Key) < 32)
+                {
+                    throw new InvalidOperationException(
+                        "JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256.");
                 }
 
                 options.TokenValidationParameters = new TokenValidationParameters

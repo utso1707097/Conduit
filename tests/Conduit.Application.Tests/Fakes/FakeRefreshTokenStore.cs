@@ -5,108 +5,95 @@ namespace Conduit.Application.Tests.Fakes;
 
 internal sealed class FakeRefreshTokenStore : IRefreshTokenStore
 {
-    private readonly Dictionary<string, RefreshTokenInfo> _byToken = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, List<RefreshTokenInfo>> _byUserId = new(StringComparer.Ordinal);
+    private sealed class Entry
+    {
+        public required string Token { get; init; }
+        public required string UserId { get; init; }
+        public required Guid FamilyId { get; init; }
+        public DateTime CreatedUtc { get; init; } = DateTime.UtcNow;
+        public DateTime ExpiresUtc { get; init; } = DateTime.UtcNow.AddDays(10);
+        public DateTime? RevokedUtc { get; set; }
+
+        public bool IsActive => RevokedUtc is null && DateTime.UtcNow < ExpiresUtc;
+    }
+
+    private readonly List<Entry> _entries = [];
 
     public Task<Result<RefreshTokenInfo>> IssueAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var active = _byUserId.GetValueOrDefault(userId)?
-            .FirstOrDefault(t => t.IsActive);
-
-        if (active is not null)
-        {
-            return Task.FromResult(Result<RefreshTokenInfo>.Ok(active));
-        }
-
-        var token = Create(userId);
-        _byToken[token.Token] = token;
-        if (!_byUserId.TryGetValue(userId, out var list))
-        {
-            list = [];
-            _byUserId[userId] = list;
-        }
-
-        list.Add(token);
-        return Task.FromResult(Result<RefreshTokenInfo>.Ok(token));
+        var entry = Create(userId, Guid.NewGuid());
+        _entries.Add(entry);
+        return Task.FromResult(Result<RefreshTokenInfo>.Ok(ToInfo(entry)));
     }
 
-    public Task<RefreshTokenInfo?> FindByTokenAsync(string token, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_byToken.GetValueOrDefault(token));
+    public Task<RefreshTokenInfo?> FindByTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        var entry = _entries.FirstOrDefault(e => e.Token == token);
+        return Task.FromResult(entry is null ? null : ToInfo(entry));
+    }
 
     public Task<Result> RevokeAsync(string token, CancellationToken cancellationToken = default)
     {
-        if (!_byToken.TryGetValue(token, out var info))
+        var entry = _entries.FirstOrDefault(e => e.Token == token);
+        if (entry is null)
         {
             return Task.FromResult(Result.NotFound("refreshToken", "was not found"));
         }
 
-        if (!info.IsActive)
+        if (!entry.IsActive)
         {
-            return Task.FromResult(Result.Fail(
-                ErrorKind.Validation,
-                new Dictionary<string, string[]> { ["refreshToken"] = ["is not active"] }));
+            return Task.FromResult(Result.Validation("refreshToken", "is not active"));
         }
 
-        var revoked = info with { RevokedUtc = DateTime.UtcNow };
-        _byToken[token] = revoked;
-        ReplaceInUserList(revoked);
+        entry.RevokedUtc = DateTime.UtcNow;
         return Task.FromResult(Result.Ok());
     }
 
     public Task<Result<RefreshTokenInfo>> RotateAsync(string token, CancellationToken cancellationToken = default)
     {
-        if (!_byToken.TryGetValue(token, out var info))
+        var entry = _entries.FirstOrDefault(e => e.Token == token);
+        if (entry is null)
         {
-            return Task.FromResult(Result<RefreshTokenInfo>.Fail(
-                ErrorKind.Unauthorized,
-                new Dictionary<string, string[]> { ["refreshToken"] = ["did not match any user"] }));
+            return Task.FromResult(Result<RefreshTokenInfo>.Unauthorized("refreshToken", "did not match any user"));
         }
 
-        if (!info.IsActive)
+        if (!entry.IsActive)
         {
-            return Task.FromResult(Result<RefreshTokenInfo>.Fail(
-                ErrorKind.Unauthorized,
-                new Dictionary<string, string[]> { ["refreshToken"] = ["is not active"] }));
+            foreach (var sibling in _entries.Where(e => e.FamilyId == entry.FamilyId && e.IsActive))
+            {
+                sibling.RevokedUtc = DateTime.UtcNow;
+            }
+
+            return Task.FromResult(Result<RefreshTokenInfo>.Unauthorized("refreshToken", "has been revoked"));
         }
 
-        var revoked = info with { RevokedUtc = DateTime.UtcNow };
-        _byToken[token] = revoked;
-        ReplaceInUserList(revoked);
-
-        var replacement = Create(info.UserId);
-        _byToken[replacement.Token] = replacement;
-        _byUserId[info.UserId].Add(replacement);
-        return Task.FromResult(Result<RefreshTokenInfo>.Ok(replacement));
+        entry.RevokedUtc = DateTime.UtcNow;
+        var replacement = Create(entry.UserId, entry.FamilyId);
+        _entries.Add(replacement);
+        return Task.FromResult(Result<RefreshTokenInfo>.Ok(ToInfo(replacement)));
     }
 
-    public Task<IReadOnlyList<RefreshTokenInfo>> ListForUserAsync(
+    public Task<IReadOnlyList<RefreshTokenSummary>> ListForUserAsync(
         string userId,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<RefreshTokenInfo>>(
-            _byUserId.GetValueOrDefault(userId)?.ToList() ?? []);
-
-    private static RefreshTokenInfo Create(string userId)
+        CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        return new RefreshTokenInfo(
-            userId,
-            Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-            now.AddDays(10),
-            now,
-            null);
+        var summaries = _entries
+            .Where(e => e.UserId == userId)
+            .OrderByDescending(e => e.CreatedUtc)
+            .Select(e => new RefreshTokenSummary(e.CreatedUtc, e.ExpiresUtc, e.RevokedUtc, e.IsActive))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<RefreshTokenSummary>>(summaries);
     }
 
-    private void ReplaceInUserList(RefreshTokenInfo updated)
-    {
-        if (!_byUserId.TryGetValue(updated.UserId, out var list))
+    private static Entry Create(string userId, Guid familyId) =>
+        new()
         {
-            return;
-        }
+            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+            UserId = userId,
+            FamilyId = familyId
+        };
 
-        var index = list.FindIndex(t => t.Token == updated.Token);
-        if (index >= 0)
-        {
-            list[index] = updated;
-        }
-    }
+    private static RefreshTokenInfo ToInfo(Entry entry) =>
+        new(entry.UserId, entry.Token, entry.ExpiresUtc, entry.CreatedUtc, entry.RevokedUtc);
 }

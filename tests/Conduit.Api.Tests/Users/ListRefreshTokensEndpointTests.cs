@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Conduit.Api.Contracts;
+using Conduit.Api.Users;
+using Conduit.Application.Users;
 using Conduit.Tests.Shared;
 using Xunit;
 
@@ -34,11 +35,11 @@ public sealed class ListRefreshTokensEndpointTests : IAsyncLifetime
     public async Task ListRefreshTokens_AuthenticatedOwner_Returns200()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_list_{suffix}",
+                UserName = $"api_list_{suffix}",
                 Email = $"api_list_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -89,7 +90,7 @@ public sealed class ListRefreshTokensEndpointTests : IAsyncLifetime
         var userId = ParseSubFromJwt(registered.User.Token)!;
         var originalRefresh = registered.User.RefreshToken!;
 
-        await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest
+        await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand
         {
             RefreshToken = originalRefresh
         });
@@ -118,11 +119,11 @@ public sealed class ListRefreshTokensEndpointTests : IAsyncLifetime
 
     private async Task<UserWrapperResponse> RegisterAsync(string username, string email)
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var response = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = username,
+                UserName = username,
                 Email = email,
                 Password = "jakejake"
             }

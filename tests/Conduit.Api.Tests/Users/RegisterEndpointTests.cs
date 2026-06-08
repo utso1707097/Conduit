@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Conduit.Api.Contracts;
+using Conduit.Api.Users;
+using Conduit.Application.Users;
 using Conduit.Tests.Shared;
 using Xunit;
 
@@ -32,11 +33,11 @@ public sealed class RegisterEndpointTests : IAsyncLifetime
     public async Task Register_ValidRequest_Returns201WithToken()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var request = new UserWrapperRequest<RegisterUserRequest>
+        var request = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_reg_{suffix}",
+                UserName = $"api_reg_{suffix}",
                 Email = $"api_reg_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -47,18 +48,18 @@ public sealed class RegisterEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<UserWrapperResponse>();
         Assert.NotNull(body?.User.Token);
-        Assert.Equal(request.User.Username, body.User.Username);
+        Assert.Equal(request.User.UserName, body.User.Username);
         Assert.Equal(request.User.Email, body.User.Email);
     }
 
     [Fact]
     public async Task Register_MissingFields_Returns422()
     {
-        var request = new UserWrapperRequest<RegisterUserRequest>
+        var request = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = "",
+                UserName = "",
                 Email = "",
                 Password = ""
             }
@@ -78,20 +79,20 @@ public sealed class RegisterEndpointTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var email = $"api_dup_email_{suffix}@example.com";
-        var first = new UserWrapperRequest<RegisterUserRequest>
+        var first = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"first_{suffix}",
+                UserName = $"first_{suffix}",
                 Email = email,
                 Password = "jakejake"
             }
         };
-        var second = new UserWrapperRequest<RegisterUserRequest>
+        var second = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"second_{suffix}",
+                UserName = $"second_{suffix}",
                 Email = email,
                 Password = "jakejake"
             }
@@ -110,20 +111,20 @@ public sealed class RegisterEndpointTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var userName = $"api_dup_user_{suffix}";
-        var first = new UserWrapperRequest<RegisterUserRequest>
+        var first = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = userName,
+                UserName = userName,
                 Email = $"one_{suffix}@example.com",
                 Password = "jakejake"
             }
         };
-        var second = new UserWrapperRequest<RegisterUserRequest>
+        var second = new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = userName,
+                UserName = userName,
                 Email = $"two_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -140,7 +141,7 @@ public sealed class RegisterEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Register_EmptyBody_Returns422()
     {
-        var response = await _client.PostAsJsonAsync<UserWrapperRequest<RegisterUserRequest>?>(
+        var response = await _client.PostAsJsonAsync<UserWrapperRequest<RegisterUserCommand>?>(
             "/api/users",
             null);
 

@@ -24,16 +24,6 @@ public sealed record AuthenticatedUser(
     string Token,
     RefreshTokenInfo RefreshToken);
 
-public sealed record RegisterUserCommand(string UserName, string Email, string Password);
-
-public sealed record LoginUserCommand(string Email, string Password);
-
-public sealed record RefreshTokenCommand(string Token);
-
-public sealed record RevokeRefreshTokenCommand(string Token);
-
-public sealed record ListRefreshTokensCommand(string UserId, string RequesterUserId);
-
 public interface IUserAccountStore
 {
     Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default);

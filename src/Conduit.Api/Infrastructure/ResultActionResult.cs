@@ -1,5 +1,5 @@
 using Conduit.Application.Common;
-using Conduit.Api.Contracts;
+using Conduit.Api.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Conduit.Api.Infrastructure;

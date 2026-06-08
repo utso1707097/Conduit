@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Conduit.Api.Contracts;
+using Conduit.Api.Users;
+using Conduit.Application.Users;
 using Conduit.Tests.Shared;
 using Xunit;
 
@@ -33,11 +34,11 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var email = $"api_refresh_{suffix}@example.com";
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_refresh_{suffix}",
+                UserName = $"api_refresh_{suffix}",
                 Email = email,
                 Password = "jakejake"
             }
@@ -45,7 +46,7 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
         var registered = await register.Content.ReadFromJsonAsync<UserWrapperResponse>();
         var refreshToken = registered!.User.RefreshToken!;
 
-        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand
         {
             RefreshToken = refreshToken
         });
@@ -59,7 +60,7 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_BlankToken_Returns422()
     {
-        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand
         {
             RefreshToken = ""
         });
@@ -70,7 +71,7 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_UnknownToken_Returns401()
     {
-        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand
         {
             RefreshToken = "missing-token"
         });
@@ -82,11 +83,11 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
     public async Task Refresh_ReusedTokenAfterRotation_Returns401()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_reuse_{suffix}",
+                UserName = $"api_reuse_{suffix}",
                 Email = $"api_reuse_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -94,8 +95,8 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
         var registered = await register.Content.ReadFromJsonAsync<UserWrapperResponse>();
         var original = registered!.User.RefreshToken!;
 
-        await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest { RefreshToken = original });
-        var second = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest { RefreshToken = original });
+        await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand { RefreshToken = original });
+        var second = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand { RefreshToken = original });
 
         Assert.Equal(HttpStatusCode.Unauthorized, second.StatusCode);
     }
@@ -105,19 +106,19 @@ public sealed class RefreshEndpointTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var email = $"api_login_refresh_{suffix}@example.com";
-        await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_login_refresh_{suffix}",
+                UserName = $"api_login_refresh_{suffix}",
                 Email = email,
                 Password = "jakejake"
             }
         });
 
-        var response = await _client.PostAsJsonAsync("/api/users/login", new UserWrapperRequest<LoginUserRequest>
+        var response = await _client.PostAsJsonAsync("/api/users/login", new UserWrapperRequest<LoginUserCommand>
         {
-            User = new LoginUserRequest { Email = email, Password = "jakejake" }
+            User = new LoginUserCommand { Email = email, Password = "jakejake" }
         });
 
         var body = await response.Content.ReadFromJsonAsync<UserWrapperResponse>();

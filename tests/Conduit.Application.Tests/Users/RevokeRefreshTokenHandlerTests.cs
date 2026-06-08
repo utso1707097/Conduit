@@ -20,7 +20,7 @@ public sealed class RevokeRefreshTokenHandlerTests
     {
         var issued = (await _refreshTokens.IssueAsync("user-1")).Value!;
 
-        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand(issued.Token));
+        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand { RefreshToken = issued.Token });
 
         Assert.True(result.IsSuccess);
         var found = await _refreshTokens.FindByTokenAsync(issued.Token);
@@ -31,7 +31,7 @@ public sealed class RevokeRefreshTokenHandlerTests
     [Fact]
     public async Task HandleAsync_BlankToken_ReturnsValidationError()
     {
-        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand(""));
+        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand { RefreshToken = "" });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.Validation, result.Kind);
@@ -40,7 +40,7 @@ public sealed class RevokeRefreshTokenHandlerTests
     [Fact]
     public async Task HandleAsync_UnknownToken_ReturnsNotFound()
     {
-        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand("missing"));
+        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand { RefreshToken = "missing" });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.NotFound, result.Kind);
@@ -52,7 +52,7 @@ public sealed class RevokeRefreshTokenHandlerTests
         var issued = (await _refreshTokens.IssueAsync("user-1")).Value!;
         await _refreshTokens.RevokeAsync(issued.Token);
 
-        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand(issued.Token));
+        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand { RefreshToken = issued.Token });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.Validation, result.Kind);
@@ -63,7 +63,7 @@ public sealed class RevokeRefreshTokenHandlerTests
     {
         var issued = (await _refreshTokens.IssueAsync("user-1")).Value!;
 
-        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand($"  {issued.Token}  "));
+        var result = await _handler.HandleAsync(new RevokeRefreshTokenCommand { RefreshToken = $"  {issued.Token}  " });
 
         Assert.True(result.IsSuccess);
     }

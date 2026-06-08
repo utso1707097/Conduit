@@ -20,7 +20,7 @@ public sealed class RegisterUserHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommand_ReturnsAuthenticatedUserWithToken()
     {
-        var command = new RegisterUserCommand("jake", "jake@jake.jake", "jakejake");
+        var command = new RegisterUserCommand { UserName = "jake", Email = "jake@jake.jake", Password = "jakejake" };
 
         var result = await _handler.HandleAsync(command);
 
@@ -34,7 +34,7 @@ public sealed class RegisterUserHandlerTests
     [Fact]
     public async Task HandleAsync_BlankUsername_ReturnsValidationError()
     {
-        var command = new RegisterUserCommand("  ", "jake@jake.jake", "jakejake");
+        var command = new RegisterUserCommand { UserName = "  ", Email = "jake@jake.jake", Password = "jakejake" };
 
         var result = await _handler.HandleAsync(command);
 
@@ -46,7 +46,7 @@ public sealed class RegisterUserHandlerTests
     [Fact]
     public async Task HandleAsync_BlankEmail_ReturnsValidationError()
     {
-        var command = new RegisterUserCommand("jake", "", "jakejake");
+        var command = new RegisterUserCommand { UserName = "jake", Email = "", Password = "jakejake" };
 
         var result = await _handler.HandleAsync(command);
 
@@ -58,7 +58,7 @@ public sealed class RegisterUserHandlerTests
     [Fact]
     public async Task HandleAsync_BlankPassword_ReturnsValidationError()
     {
-        var command = new RegisterUserCommand("jake", "jake@jake.jake", "   ");
+        var command = new RegisterUserCommand { UserName = "jake", Email = "jake@jake.jake", Password = "   " };
 
         var result = await _handler.HandleAsync(command);
 
@@ -73,7 +73,7 @@ public sealed class RegisterUserHandlerTests
         _store.CreateHandler = (_, _, _) =>
             Result<UserAccount>.Conflict("email", "has already been taken");
 
-        var command = new RegisterUserCommand("jake", "taken@jake.jake", "jakejake");
+        var command = new RegisterUserCommand { UserName = "jake", Email = "taken@jake.jake", Password = "jakejake" };
 
         var result = await _handler.HandleAsync(command);
 

@@ -1,12 +1,11 @@
 using System.Security.Claims;
-using Conduit.Api.Contracts;
 using Conduit.Api.Infrastructure;
 using Conduit.Api.Routing;
 using Conduit.Application.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Conduit.Api.Controllers;
+namespace Conduit.Api.Users;
 
 [ApiController]
 [Route(ApiRoutes.Users)]
@@ -20,64 +19,57 @@ public sealed class UsersController(
     [AllowAnonymous]
     [HttpPost]
     public async Task<IActionResult> Register(
-        [FromBody] UserWrapperRequest<RegisterUserRequest>? request,
+        [FromBody] UserWrapperRequest<RegisterUserCommand>? request,
         CancellationToken cancellationToken)
     {
-        var user = request?.User;
         var result = await registerUser.HandleAsync(
-            new RegisterUserCommand(
-                user?.Username ?? string.Empty,
-                user?.Email ?? string.Empty,
-                user?.Password ?? string.Empty),
+            request?.User ?? new RegisterUserCommand(),
             cancellationToken);
 
         return this.FromResult(
             result,
-            auth => new UserWrapperResponse { User = ToUserResponse(auth) },
+            auth => new UserWrapperResponse { User = UserResponse.From(auth) },
             successStatusCode: StatusCodes.Status201Created);
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
-        [FromBody] UserWrapperRequest<LoginUserRequest>? request,
+        [FromBody] UserWrapperRequest<LoginUserCommand>? request,
         CancellationToken cancellationToken)
     {
-        var user = request?.User;
         var result = await loginUser.HandleAsync(
-            new LoginUserCommand(
-                user?.Email ?? string.Empty,
-                user?.Password ?? string.Empty),
+            request?.User ?? new LoginUserCommand(),
             cancellationToken);
 
         return this.FromResult(
             result,
-            auth => new UserWrapperResponse { User = ToUserResponse(auth) });
+            auth => new UserWrapperResponse { User = UserResponse.From(auth) });
     }
 
     [AllowAnonymous]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(
-        [FromBody] RefreshTokenRequest? request,
+        [FromBody] RefreshTokenCommand? request,
         CancellationToken cancellationToken)
     {
         var result = await refreshUserToken.HandleAsync(
-            new RefreshTokenCommand(request?.RefreshToken ?? string.Empty),
+            request ?? new RefreshTokenCommand(),
             cancellationToken);
 
         return this.FromResult(
             result,
-            auth => new UserWrapperResponse { User = ToUserResponse(auth) });
+            auth => new UserWrapperResponse { User = UserResponse.From(auth) });
     }
 
     [AllowAnonymous]
     [HttpPost("revoke-refresh")]
     public async Task<IActionResult> RevokeRefresh(
-        [FromBody] RevokeRefreshTokenRequest? request,
+        [FromBody] RevokeRefreshTokenCommand? request,
         CancellationToken cancellationToken)
     {
         var result = await revokeRefreshToken.HandleAsync(
-            new RevokeRefreshTokenCommand(request?.RefreshToken ?? string.Empty),
+            request ?? new RevokeRefreshTokenCommand(),
             cancellationToken);
 
         return this.FromResult(result, () => new MessageResponse { Message = "Token revoked" });
@@ -97,28 +89,6 @@ public sealed class UsersController(
 
         return this.FromResult(
             result,
-            tokens => tokens.Select(ToRefreshTokenResponse).ToList());
+            tokens => tokens.Select(RefreshTokenResponse.From).ToList());
     }
-
-    private static UserResponse ToUserResponse(AuthenticatedUser authenticated) =>
-        new()
-        {
-            Email = authenticated.Account.Email,
-            Token = authenticated.Token,
-            Username = authenticated.Account.UserName,
-            Bio = authenticated.Account.Bio,
-            Image = authenticated.Account.Image,
-            RefreshToken = authenticated.RefreshToken.Token,
-            RefreshTokenExpiration = authenticated.RefreshToken.ExpiresUtc
-        };
-
-    private static RefreshTokenResponse ToRefreshTokenResponse(RefreshTokenInfo token) =>
-        new()
-        {
-            Token = token.Token,
-            ExpiresUtc = token.ExpiresUtc,
-            CreatedUtc = token.CreatedUtc,
-            RevokedUtc = token.RevokedUtc,
-            IsActive = token.IsActive
-        };
 }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Conduit.Api.Contracts;
+using Conduit.Api.Users;
+using Conduit.Application.Users;
 using Conduit.Tests.Shared;
 using Xunit;
 
@@ -32,18 +33,18 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
     public async Task RevokeRefresh_ValidToken_Returns200()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_revoke_{suffix}",
+                UserName = $"api_revoke_{suffix}",
                 Email = $"api_revoke_{suffix}@example.com",
                 Password = "jakejake"
             }
         });
         var registered = await register.Content.ReadFromJsonAsync<UserWrapperResponse>();
 
-        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = registered!.User.RefreshToken
         });
@@ -56,7 +57,7 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
     [Fact]
     public async Task RevokeRefresh_BlankToken_Returns422()
     {
-        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = ""
         });
@@ -67,7 +68,7 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
     [Fact]
     public async Task RevokeRefresh_UnknownToken_Returns404()
     {
-        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        var response = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = "missing-token"
         });
@@ -79,11 +80,11 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
     public async Task RevokeRefresh_AfterRevoke_RefreshFailsWith401()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_revoke_flow_{suffix}",
+                UserName = $"api_revoke_flow_{suffix}",
                 Email = $"api_revoke_flow_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -91,12 +92,12 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
         var registered = await register.Content.ReadFromJsonAsync<UserWrapperResponse>();
         var refreshToken = registered!.User.RefreshToken!;
 
-        await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = refreshToken
         });
 
-        var refresh = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenRequest
+        var refresh = await _client.PostAsJsonAsync("/api/users/refresh", new RefreshTokenCommand
         {
             RefreshToken = refreshToken
         });
@@ -108,11 +109,11 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
     public async Task RevokeRefresh_AlreadyRevokedToken_Returns422()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserRequest>
+        var register = await _client.PostAsJsonAsync("/api/users", new UserWrapperRequest<RegisterUserCommand>
         {
-            User = new RegisterUserRequest
+            User = new RegisterUserCommand
             {
-                Username = $"api_revoke_twice_{suffix}",
+                UserName = $"api_revoke_twice_{suffix}",
                 Email = $"api_revoke_twice_{suffix}@example.com",
                 Password = "jakejake"
             }
@@ -120,12 +121,12 @@ public sealed class RevokeRefreshEndpointTests : IAsyncLifetime
         var registered = await register.Content.ReadFromJsonAsync<UserWrapperResponse>();
         var refreshToken = registered!.User.RefreshToken!;
 
-        await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = refreshToken
         });
 
-        var second = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenRequest
+        var second = await _client.PostAsJsonAsync("/api/users/revoke-refresh", new RevokeRefreshTokenCommand
         {
             RefreshToken = refreshToken
         });

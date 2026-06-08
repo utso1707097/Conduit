@@ -1,36 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using Conduit.Application.Users;
 
-namespace Conduit.Api.Contracts;
+namespace Conduit.Api.Users;
 
 public sealed class UserWrapperRequest<T>
 {
     public T? User { get; set; }
-}
-
-public sealed class RegisterUserRequest
-{
-    public string? Username { get; set; }
-
-    public string? Email { get; set; }
-
-    public string? Password { get; set; }
-}
-
-public sealed class LoginUserRequest
-{
-    public string? Email { get; set; }
-
-    public string? Password { get; set; }
-}
-
-public sealed class RefreshTokenRequest
-{
-    public string? RefreshToken { get; set; }
-}
-
-public sealed class RevokeRefreshTokenRequest
-{
-    public string? RefreshToken { get; set; }
 }
 
 public sealed class UserResponse
@@ -51,6 +26,18 @@ public sealed class UserResponse
     public string? RefreshToken { get; init; }
 
     public DateTime? RefreshTokenExpiration { get; init; }
+
+    public static UserResponse From(AuthenticatedUser authenticated) =>
+        new()
+        {
+            Email = authenticated.Account.Email,
+            Token = authenticated.Token,
+            Username = authenticated.Account.UserName,
+            Bio = authenticated.Account.Bio,
+            Image = authenticated.Account.Image,
+            RefreshToken = authenticated.RefreshToken.Token,
+            RefreshTokenExpiration = authenticated.RefreshToken.ExpiresUtc
+        };
 }
 
 public sealed class UserWrapperResponse
@@ -74,6 +61,16 @@ public sealed class RefreshTokenResponse
 
     [Required]
     public required bool IsActive { get; init; }
+
+    public static RefreshTokenResponse From(RefreshTokenInfo token) =>
+        new()
+        {
+            Token = token.Token,
+            ExpiresUtc = token.ExpiresUtc,
+            CreatedUtc = token.CreatedUtc,
+            RevokedUtc = token.RevokedUtc,
+            IsActive = token.IsActive
+        };
 }
 
 public sealed class MessageResponse

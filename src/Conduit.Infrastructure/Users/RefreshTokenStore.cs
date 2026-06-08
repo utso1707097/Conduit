@@ -1,7 +1,7 @@
+using System.Security.Cryptography;
 using Conduit.Application.Common;
 using Conduit.Application.Settings;
 using Conduit.Application.Users;
-using Conduit.Infrastructure.Auth;
 using Conduit.Infrastructure.Models;
 using Conduit.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -125,7 +125,7 @@ public sealed class RefreshTokenStore(
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            Token = RefreshTokenGenerator.GenerateToken(),
+            Token = GenerateToken(),
             CreatedUtc = now,
             ExpiresUtc = now.AddDays(jwtOptions.Value.RefreshTokenDurationInDays)
         };
@@ -136,4 +136,11 @@ public sealed class RefreshTokenStore(
 
     private static RefreshTokenInfo ToInfo(RefreshToken entity) =>
         new(entity.UserId, entity.Token, entity.ExpiresUtc, entity.CreatedUtc, entity.RevokedUtc);
+
+    private static string GenerateToken()
+    {
+        Span<byte> bytes = stackalloc byte[32];
+        RandomNumberGenerator.Fill(bytes);
+        return Convert.ToBase64String(bytes);
+    }
 }

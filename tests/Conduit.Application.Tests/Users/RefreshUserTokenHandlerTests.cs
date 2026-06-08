@@ -23,7 +23,7 @@ public sealed class RefreshUserTokenHandlerTests
         var account = (await _users.CreateAsync("jake", "jake@jake.jake", "jakejake")).Value!;
         var issued = (await _refreshTokens.IssueAsync(account.Id)).Value!;
 
-        var result = await _handler.HandleAsync(new RefreshTokenCommand(issued.Token));
+        var result = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = issued.Token });
 
         Assert.True(result.IsSuccess);
         Assert.NotEqual(issued.Token, result.Value!.RefreshToken.Token);
@@ -33,7 +33,7 @@ public sealed class RefreshUserTokenHandlerTests
     [Fact]
     public async Task HandleAsync_BlankToken_ReturnsValidationError()
     {
-        var result = await _handler.HandleAsync(new RefreshTokenCommand(""));
+        var result = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = "" });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.Validation, result.Kind);
@@ -43,7 +43,7 @@ public sealed class RefreshUserTokenHandlerTests
     [Fact]
     public async Task HandleAsync_UnknownToken_ReturnsUnauthorized()
     {
-        var result = await _handler.HandleAsync(new RefreshTokenCommand("missing-token"));
+        var result = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = "missing-token" });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.Unauthorized, result.Kind);
@@ -56,7 +56,7 @@ public sealed class RefreshUserTokenHandlerTests
         var issued = (await _refreshTokens.IssueAsync(account.Id)).Value!;
         await _refreshTokens.RevokeAsync(issued.Token);
 
-        var result = await _handler.HandleAsync(new RefreshTokenCommand(issued.Token));
+        var result = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = issued.Token });
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorKind.Unauthorized, result.Kind);
@@ -67,10 +67,10 @@ public sealed class RefreshUserTokenHandlerTests
     {
         var account = (await _users.CreateAsync("jake", "jake@jake.jake", "jakejake")).Value!;
         var issued = (await _refreshTokens.IssueAsync(account.Id)).Value!;
-        var firstRefresh = await _handler.HandleAsync(new RefreshTokenCommand(issued.Token));
+        var firstRefresh = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = issued.Token });
         Assert.True(firstRefresh.IsSuccess);
 
-        var secondRefresh = await _handler.HandleAsync(new RefreshTokenCommand(issued.Token));
+        var secondRefresh = await _handler.HandleAsync(new RefreshTokenCommand { RefreshToken = issued.Token });
 
         Assert.False(secondRefresh.IsSuccess);
         Assert.Equal(ErrorKind.Unauthorized, secondRefresh.Kind);

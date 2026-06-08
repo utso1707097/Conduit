@@ -24,6 +24,15 @@ public sealed record AuthenticatedUser(
     string Token,
     RefreshTokenInfo RefreshToken);
 
+public sealed record UserWithToken(UserAccount Account, string Token);
+
+public sealed record UpdateUserChanges(
+    string? Email = null,
+    string? UserName = null,
+    string? Password = null,
+    string? Bio = null,
+    string? Image = null);
+
 public interface IUserAccountStore
 {
     Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default);
@@ -41,6 +50,11 @@ public interface IUserAccountStore
     Task<UserAccount?> ValidateCredentialsAsync(
         string email,
         string password,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<UserAccount>> UpdateAsync(
+        string userId,
+        UpdateUserChanges changes,
         CancellationToken cancellationToken = default);
 }
 

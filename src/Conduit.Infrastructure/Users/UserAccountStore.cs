@@ -86,6 +86,94 @@ public sealed class UserAccountStore(UserManager<ApplicationUser> userManager) :
         return valid ? ToAccount(user) : null;
     }
 
+    public async Task<Result<UserAccount>> UpdateAsync(
+        string userId,
+        UpdateUserChanges changes,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Result<UserAccount>.NotFound("user", "was not found");
+        }
+
+        if (changes.Email is not null)
+        {
+            var existing = await FindByEmailAsync(changes.Email, cancellationToken);
+            if (existing is not null && existing.Id != userId)
+            {
+                return Result<UserAccount>.Conflict("email", "has already been taken");
+            }
+
+            var emailResult = await userManager.SetEmailAsync(user, changes.Email);
+            if (!emailResult.Succeeded)
+            {
+                return Result<UserAccount>.Fail(
+                    ErrorKind.Validation,
+                    MapIdentityErrors(emailResult.Errors));
+            }
+        }
+
+        if (changes.UserName is not null)
+        {
+            var existing = await FindByUserNameAsync(changes.UserName, cancellationToken);
+            if (existing is not null && existing.Id != userId)
+            {
+                return Result<UserAccount>.Conflict("username", "has already been taken");
+            }
+
+            var userNameResult = await userManager.SetUserNameAsync(user, changes.UserName);
+            if (!userNameResult.Succeeded)
+            {
+                return Result<UserAccount>.Fail(
+                    ErrorKind.Validation,
+                    MapIdentityErrors(userNameResult.Errors));
+            }
+        }
+
+        if (changes.Password is not null)
+        {
+            var passwordResult = await userManager.RemovePasswordAsync(user);
+            if (!passwordResult.Succeeded)
+            {
+                return Result<UserAccount>.Fail(
+                    ErrorKind.Validation,
+                    MapIdentityErrors(passwordResult.Errors));
+            }
+
+            passwordResult = await userManager.AddPasswordAsync(user, changes.Password);
+            if (!passwordResult.Succeeded)
+            {
+                return Result<UserAccount>.Fail(
+                    ErrorKind.Validation,
+                    MapIdentityErrors(passwordResult.Errors));
+            }
+        }
+
+        if (changes.Bio is not null)
+        {
+            user.Bio = string.IsNullOrWhiteSpace(changes.Bio) ? null : changes.Bio.Trim();
+        }
+
+        if (changes.Image is not null)
+        {
+            user.Image = string.IsNullOrWhiteSpace(changes.Image) ? null : changes.Image.Trim();
+        }
+
+        if (changes.Bio is not null || changes.Image is not null)
+        {
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return Result<UserAccount>.Fail(
+                    ErrorKind.Validation,
+                    MapIdentityErrors(updateResult.Errors));
+            }
+        }
+
+        return Result<UserAccount>.Ok(ToAccount(user));
+    }
+
     private static UserAccount ToAccount(ApplicationUser user) =>
         new(user.Id, user.UserName ?? string.Empty, user.Email ?? string.Empty, user.Bio, user.Image);
 

@@ -64,4 +64,10 @@ public sealed class Result<T>
         {
             [field] = [message]
         });
+
+    public static Result<T> NotFound(string field, string message) =>
+        Fail(ErrorKind.NotFound, new Dictionary<string, string[]>
+        {
+            [field] = [message]
+        });
 }

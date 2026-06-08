@@ -38,6 +38,19 @@ public sealed class UserResponse
             RefreshToken = authenticated.RefreshToken.Token,
             RefreshTokenExpiration = authenticated.RefreshToken.ExpiresUtc
         };
+
+    public static UserResponse From(UserAccount account, string token) =>
+        new()
+        {
+            Email = account.Email,
+            Token = token,
+            Username = account.UserName,
+            Bio = account.Bio,
+            Image = account.Image
+        };
+
+    public static UserResponse From(UserWithToken user) =>
+        From(user.Account, user.Token);
 }
 
 public sealed class UserWrapperResponse

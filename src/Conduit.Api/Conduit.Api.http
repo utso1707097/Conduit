@@ -96,6 +96,26 @@ Authorization: Token {{token}}
 
 ###
 
+### Get current user — success (200)
+GET {{host}}/api/user
+Authorization: Token {{token}}
+
+###
+
+### Update current user — success (200)
+PUT {{host}}/api/user
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{
+  "user": {
+    "bio": "I like to skateboard",
+    "image": "https://i.stack.imgur.com/xHWG8.jpg"
+  }
+}
+
+###
+
 ### Register — validation error: blank fields (422)
 POST {{host}}/api/users
 Content-Type: application/json
